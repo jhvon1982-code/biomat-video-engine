@@ -1,67 +1,69 @@
 """
-Vercel Serverless Function - API Handler
+Vercel Serverless API - FastAPI
 """
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import os
-import sys
 import json
-from datetime import datetime
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import httpx
+from datetime import datetime
+from typing import Optional
 
-# Add project root to Python path
-sys_path = os.path.dirname(os.path.dirname(__file__))
-if sys_path not in sys.path:
-    sys.path.insert(0, sys_path)
+app = FastAPI()
 
-app = Flask(__name__)
-CORS(app)
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# API Configuration
+# Configuration
 BIOMAT_API_KEY = os.getenv("BIOMAT_API_KEY", "bm_Pla1ic3_D3y3k3y_2k0k0k0k0k0k0k0k0k0k0k0k0k0k")
-
-# Coze Bot Configuration
 COZE_BOT_ID = os.getenv("COZE_BOT_ID", "7624342475888590902")
 COZE_API_TOKEN = os.getenv("COZE_API_TOKEN", "sat_CIaDvIIgWkvI7Ziny0Cdz6aIO7Sluw8qnyZXJsLVMp1t9kUuF5xX8qD0HB0kxQdC")
 COZE_API_URL = "https://api.coze.cn/open_api/v2/chat"
 
-# Validate API key
-def validate_api_key(req):
+def validate_api_key(request: Request) -> bool:
     """验证API密钥"""
-    auth_header = req.headers.get('Authorization', '')
+    auth_header = request.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
         return False
     provided_key = auth_header.replace('Bearer ', '')
     return provided_key == BIOMAT_API_KEY
 
-# Generate video endpoint
-@app.route('/api/v1/generate-video', methods=['POST'])
-def generate_video():
+@app.get("/api/v1/health")
+async def health_check():
+    """健康检查端点"""
+    return {
+        "status": "healthy",
+        "service": "Biomat_Video_Engine",
+        "version": "2.0",
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/api/v1/generate-video")
+async def generate_video(request: Request):
     """视频生成API端点"""
     # Validate API key
     if not validate_api_key(request):
-        return jsonify({
-            "success": False,
-            "error": "Unauthorized: Invalid API key"
-        }), 401
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid API key")
 
     # Parse request
     try:
-        data = request.get_json()
+        data = await request.json()
         material = data.get('material', 'auto')
         scenes = data.get('scenes', 3)
         platform = data.get('platform', 'youtube')
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": f"Invalid request format: {str(e)}"
-        }), 400
+        raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
 
-    # Execute workflow via Coze Bot
-    try:
-        # Prepare prompt
-        if material == "auto":
-            prompt = f"""
+    # Prepare prompt
+    if material == "auto":
+        prompt = f"""
 请执行Biomat_Video_Engine Pro v2.0完整工作流：
 
 1. 自动分析当前热门生物材料趋势（TikTok + YouTube）
@@ -100,9 +102,9 @@ def generate_video():
   "execution_time": "执行时间"
 }}
 ```
-            """
-        else:
-            prompt = f"""
+        """
+    else:
+        prompt = f"""
 请执行Biomat_Video_Engine Pro v2.0工作流，材料：{material}：
 
 1. 分析{material}的市场趋势和痛点
@@ -113,43 +115,33 @@ def generate_video():
 平台需求：{platform}
 
 请严格按照JSON格式返回结果（同上）。
-            """
+        """
 
-        # Call Coze Bot API
-        async def call_coze_bot():
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    COZE_API_URL,
-                    headers={
-                        "Authorization": f"Bearer {COZE_API_TOKEN}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "bot_id": COZE_BOT_ID,
-                        "user": f"make_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                        "query": prompt,
-                        "stream": false
-                    },
-                    timeout=300.0
-                )
-                return response.json()
-
-        # Synchronous wrapper
-        import asyncio
-        try:
-            result = asyncio.run(call_coze_bot())
-        except RuntimeError:
-            # If no event loop, create one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(call_coze_bot())
+    # Call Coze Bot API
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                COZE_API_URL,
+                headers={
+                    "Authorization": f"Bearer {COZE_API_TOKEN}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "bot_id": COZE_BOT_ID,
+                    "user": f"make_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                    "query": prompt,
+                    "stream": False
+                },
+                timeout=300.0
+            )
+            result = response.json()
 
         # Check Coze API response
         if result.get("code") != 0:
-            return jsonify({
-                "success": False,
-                "error": f"Coze API error: {result.get('msg', 'Unknown error')}"
-            }), 500
+            raise HTTPException(
+                status_code=500,
+                detail=f"Coze API error: {result.get('msg', 'Unknown error')}"
+            )
 
         # Extract response content
         response_text = result.get("messages", [{}])[-1].get("content", "")
@@ -174,30 +166,16 @@ def generate_video():
                     "execution_time": datetime.now().isoformat()
                 }
 
-        # Return success
-        return jsonify({
+        return {
             "success": True,
             "data": result_data,
             "execution_time": datetime.now().isoformat()
-        })
+        }
 
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Coze API timeout")
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": f"Workflow execution failed: {str(e)}"
-        }), 500
-
-# Health check endpoint
-@app.route('/api/v1/health', methods=['GET'])
-def health_check():
-    """健康检查端点"""
-    return jsonify({
-        "status": "healthy",
-        "service": "Biomat_Video_Engine",
-        "version": "2.0",
-        "timestamp": datetime.now().isoformat()
-    })
+        raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
 
 # Vercel entry point
-# Vercel will automatically handle the Flask app
 app_handler = app
