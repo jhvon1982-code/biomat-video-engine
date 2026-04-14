@@ -10,6 +10,5 @@
       "src": "/(.*)",
       "dest": "/api/__init__.py"
     }
-  ],
-  "runtime": "python3.9"
+  ]
 }
