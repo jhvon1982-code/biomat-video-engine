@@ -1,13 +1,18 @@
 """
-Vercel Serverless Function API Adapter
-适配Vercel部署的API端点 - 调用Coze Bot API
+Vercel Serverless Function - API Handler
 """
 import os
+import sys
 import json
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import httpx
+
+# Add project root to Python path
+sys_path = os.path.dirname(os.path.dirname(__file__))
+if sys_path not in sys.path:
+    sys.path.insert(0, sys_path)
 
 app = Flask(__name__)
 CORS(app)
@@ -21,9 +26,9 @@ COZE_API_TOKEN = os.getenv("COZE_API_TOKEN", "sat_CIaDvIIgWkvI7Ziny0Cdz6aIO7Sluw
 COZE_API_URL = "https://api.coze.cn/open_api/v2/chat"
 
 # Validate API key
-def validate_api_key(request):
+def validate_api_key(req):
     """验证API密钥"""
-    auth_header = request.headers.get('Authorization', '')
+    auth_header = req.headers.get('Authorization', '')
     if not auth_header.startswith('Bearer '):
         return False
     provided_key = auth_header.replace('Bearer ', '')
@@ -194,4 +199,5 @@ def health_check():
     })
 
 # Vercel entry point
+# Vercel will automatically handle the Flask app
 app_handler = app
