@@ -15,10 +15,5 @@
       "src": "/(.*)",
       "dest": "/api/index.py"
     }
-  ],
-  "env": {
-    "BIOMAT_API_KEY": "bm_Pla1ic3_D3y3k3y_2k0k0k0k0k0k0k0k0k0k0k0k0k0k",
-    "COZE_WORKLOAD_IDENTITY_API_KEY": "@coze_api_key",
-    "COZE_INTEGRATION_MODEL_BASE_URL": "@model_base_url"
-  }
+  ]
 }
