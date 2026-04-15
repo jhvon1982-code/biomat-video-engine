@@ -17,32 +17,59 @@ from storage.memory.memory_saver import get_memory_saver
 
 # Import all tools
 from tools.knowledge_search_tool import search_polymer_specs, import_knowledge_url
-from tools.pro_video_generation_tool import (
-    generate_pro_video,
-    generate_intro_scene,
-    generate_data_scene,
-    generate_property_scene,
-    generate_application_scene,
-    generate_conclusion_scene
+from tools.product_knowledge_tool import (
+    get_company_info,
+    get_all_products,
+    get_product_detail,
+    search_product_by_name,
+    get_standards,
+    get_video_script_template
 )
-from tools.jimeng_video_tool import (
-    generate_jimeng_video,
-    generate_jimeng_video_with_image
-)
-from tools.tiktok_publisher import (
-    generate_tiktok_publishing_guide,
-    save_tiktok_publishing_guide
-)
-from tools.seo_tools import generate_whatsapp_cta, get_safe_vocabulary
-from tools.trend_search_tool import search_video_trends, search_seo_trends, search_material_trends
-from tools.trend_analysis_tools import (
-    analyze_tiktok_trends,
-    analyze_youtube_trends,
-    identify_pain_points,
-    match_material_strategy,
-    generate_decision_brief,
-    auto_generate_video_scenes
-)
+
+# Try to import video generation tools
+try:
+    from tools.pro_video_generation_tool import (
+        generate_pro_video,
+        generate_intro_scene,
+        generate_data_scene,
+        generate_property_scene,
+        generate_application_scene,
+        generate_conclusion_scene
+    )
+    HAS_PRO_VIDEO = True
+except ImportError:
+    HAS_PRO_VIDEO = False
+
+# Try to import jimeng tools
+try:
+    from tools.jimeng_video_tool import (
+        generate_jimeng_video,
+        generate_jimeng_video_with_image
+    )
+    HAS_JIMENG = True
+except ImportError:
+    HAS_JIMENG = False
+
+# Try to import other tools
+try:
+    from tools.tiktok_publisher import (
+        generate_tiktok_publishing_guide,
+        save_tiktok_publishing_guide
+    )
+    from tools.seo_tools import generate_whatsapp_cta, get_safe_vocabulary
+    from tools.trend_search_tool import search_video_trends, search_seo_trends, search_material_trends
+    from tools.trend_analysis_tools import (
+        analyze_tiktok_trends,
+        analyze_youtube_trends,
+        identify_pain_points,
+        match_material_strategy,
+        generate_decision_brief,
+        auto_generate_video_scenes
+    )
+    HAS_TOOLS = True
+except ImportError as e:
+    print(f"Warning: Some tools could not be imported: {e}")
+    HAS_TOOLS = False
 
 LLM_CONFIG = "config/agent_llm_config.json"
 
@@ -100,35 +127,59 @@ def build_agent(ctx=None):
 
     # Configure all tools (v2.0 with trend analysis)
     tools = [
-        # NEW: Trend Analysis Tools
-        analyze_tiktok_trends,
-        analyze_youtube_trends,
-        identify_pain_points,
-        match_material_strategy,
-        generate_decision_brief,
-        auto_generate_video_scenes,
+        # NEW: Product Knowledge Tools
+        get_company_info,
+        get_all_products,
+        get_product_detail,
+        search_product_by_name,
+        get_standards,
+        get_video_script_template,
 
         # Knowledge retrieval
         search_polymer_specs,
         import_knowledge_url,
-
-        # Professional video generation (Jimeng-style scenes)
-        generate_pro_video,
-        generate_intro_scene,
-        generate_data_scene,
-        generate_property_scene,
-        generate_application_scene,
-        generate_conclusion_scene,
-
-        # SEO & customer service
-        generate_whatsapp_cta,
-        get_safe_vocabulary,
-
-        # Trend research
-        search_video_trends,
-        search_seo_trends,
-        search_material_trends
     ]
+
+    # Add tools if available
+    if HAS_TOOLS:
+        tools.extend([
+            # Trend Analysis Tools
+            analyze_tiktok_trends,
+            analyze_youtube_trends,
+            identify_pain_points,
+            match_material_strategy,
+            generate_decision_brief,
+            auto_generate_video_scenes,
+
+            # SEO & customer service
+            generate_whatsapp_cta,
+            get_safe_vocabulary,
+
+            # Trend research
+            search_video_trends,
+            search_seo_trends,
+            search_material_trends,
+
+            # TikTok publishing
+            generate_tiktok_publishing_guide,
+            save_tiktok_publishing_guide,
+        ])
+
+    if HAS_PRO_VIDEO:
+        tools.extend([
+            generate_pro_video,
+            generate_intro_scene,
+            generate_data_scene,
+            generate_property_scene,
+            generate_application_scene,
+            generate_conclusion_scene,
+        ])
+
+    if HAS_JIMENG:
+        tools.extend([
+            generate_jimeng_video,
+            generate_jimeng_video_with_image,
+        ])
 
     # Create and return agent with memory support
     return create_agent(

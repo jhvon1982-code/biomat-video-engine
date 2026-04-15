@@ -2,8 +2,15 @@
 Professional video generation tool matching Jimeng seedance 2.0 standards.
 """
 from langchain.tools import tool
-from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent
 from coze_coding_utils.runtime_ctx.context import new_context
+
+# Try to import coze_coding_dev_sdk
+try:
+    from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent
+    HAS_SDK = True
+except ImportError:
+    HAS_SDK = False
+    print("Warning: coze_coding_dev_sdk not available. Professional video tools will be disabled.")
 
 
 def _generate_video_with_params(prompt: str, duration: int, resolution: str, ratio: str) -> str:
@@ -19,6 +26,9 @@ def _generate_video_with_params(prompt: str, duration: int, resolution: str, rat
     Returns:
         Generated video URL with details
     """
+    if not HAS_SDK:
+        return "❌ Error: coze_coding_dev_sdk is not available. Video generation is disabled."
+
     try:
         ctx = new_context(method="video.generate.pro")
         client = VideoGenerationClient(ctx=ctx)

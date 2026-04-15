@@ -4,12 +4,15 @@ Uses coze_coding_dev_sdk with custom Volcengine API credentials.
 """
 import os
 from langchain.tools import tool
-from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent, ImageURLContent, ImageURL
 from coze_coding_utils.runtime_ctx.context import new_context
 
-# API Configuration
-JIMENG_ACCESS_KEY_ID = os.getenv("JIMENG_ACCESS_KEY_ID", "")
-JIMENG_ACCESS_KEY_SECRET = os.getenv("JIMENG_ACCESS_KEY_SECRET", "")
+# Try to import coze_coding_dev_sdk
+try:
+    from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent, ImageURLContent, ImageURL
+    HAS_SDK = True
+except ImportError:
+    HAS_SDK = False
+    print("Warning: coze_coding_dev_sdk not available. Jimeng video tools will be disabled.")
 
 # Try to import Config if available
 try:
@@ -29,6 +32,9 @@ def _get_jimeng_client():
     Returns:
         VideoGenerationClient instance
     """
+    if not HAS_SDK:
+        raise ImportError("coze_coding_dev_sdk is not available. Please install it first.")
+
     ctx = new_context(method="jimeng.video.generate")
 
     # Try to use Config if available
@@ -62,6 +68,9 @@ def generate_jimeng_video(
     Returns:
         Generated video URL with details
     """
+    if not HAS_SDK:
+        return "❌ Error: coze_coding_dev_sdk is not available. Jimeng video generation is disabled."
+
     try:
         client = _get_jimeng_client()
 
@@ -116,6 +125,9 @@ def generate_jimeng_video_with_image(
     Returns:
         Generated video URL with details
     """
+    if not HAS_SDK:
+        return "❌ Error: coze_coding_dev_sdk is not available. Jimeng video generation is disabled."
+
     try:
         client = _get_jimeng_client()
 

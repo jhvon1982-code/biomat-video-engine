@@ -2,8 +2,15 @@
 Video generation tool for creating 8K anime-style material science videos.
 """
 from langchain.tools import tool
-from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent
 from coze_coding_utils.runtime_ctx.context import new_context
+
+# Try to import coze_coding_dev_sdk
+try:
+    from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent
+    HAS_SDK = True
+except ImportError:
+    HAS_SDK = False
+    print("Warning: coze_coding_dev_sdk not available. Video generation tools will be disabled.")
 
 
 @tool
@@ -35,6 +42,9 @@ def generate_biomat_video(
     Returns:
         Generated video URL (valid for 24 hours)
     """
+    if not HAS_SDK:
+        return "❌ Error: coze_coding_dev_sdk is not available. Video generation is disabled."
+
     try:
         ctx = new_context(method="video.generate")
 

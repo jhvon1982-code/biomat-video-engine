@@ -2,8 +2,15 @@
 Web search tool for retrieving latest video creation trends and popular tags.
 """
 from langchain.tools import tool
-from coze_coding_dev_sdk import SearchClient
 from coze_coding_utils.runtime_ctx.context import new_context
+
+# Try to import coze_coding_dev_sdk
+try:
+    from coze_coding_dev_sdk import SearchClient
+    HAS_SEARCH = True
+except ImportError:
+    HAS_SEARCH = False
+    print("Warning: coze_coding_dev_sdk not available. Trend search tools will be disabled.")
 
 
 def _search_with_sdk(query: str, count: int = 10) -> str:
@@ -17,10 +24,13 @@ def _search_with_sdk(query: str, count: int = 10) -> str:
     Returns:
         Formatted search results as string
     """
-    ctx = new_context(method="search_trends")
-    client = SearchClient(ctx=ctx)
+    if not HAS_SEARCH:
+        return f"❌ Error: coze_coding_dev_sdk is not available. Trend search is disabled."
 
     try:
+        ctx = new_context(method="search_trends")
+        client = SearchClient(ctx=ctx)
+
         response = client.web_search_with_summary(query=query, count=count)
 
         # Build formatted output

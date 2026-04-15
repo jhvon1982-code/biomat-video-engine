@@ -1,0 +1,133 @@
+{
+  "company": {
+    "name": "四川琢新-云南聚和",
+    "industry": "可降解高分子材料",
+    "specialty": "医疗级生物可降解材料"
+  },
+  "products": [
+    {
+      "id": 1,
+      "category": "可降解高分子材料",
+      "name": "聚（乳酸-乙交酯）共聚物 PLGA",
+      "english_name": "Poly(lactic-co-glycolic acid)",
+      "cas": "",
+      "formula": "无固定分子式。它是一种共聚物，由乳酸 (C₃H₆O₃) 和羟基乙酸 (C₂H₄O₃) 的环状二聚体（丙交酯和乙交酯）开环聚合而成",
+      "molecular_weight": "根据需要可调",
+      "applications": [
+        "药物递送系统：可包裹药物制成纳米颗粒、微球等，实现缓释或靶向递送",
+        "可吸收手术缝合线：能在体内逐渐降解，避免二次拆线",
+        "骨科修复材料：用作骨折内固定物（如骨钉、骨板）和组织工程支架",
+        "组织工程：为细胞生长提供临时支架，用于修复皮肤、软骨等组织"
+      ],
+      "features": [
+        "优异的生物相容性",
+        "可生物降解",
+        "多分散指数：≤1.8"
+      ]
+    },
+    {
+      "id": 2,
+      "category": "可降解高分子材料",
+      "name": "聚（乳酸-三亚甲基碳酸酯）共聚物 PTLA",
+      "english_name": "Poly(lactide-trimethylene carbonate)",
+      "cas": "",
+      "formula": "(C₃H₄O₂)ₓ(C₄H₆O₃)ᵧ",
+      "molecular_weight": "根据需要可调",
+      "applications": [
+        "药物控释载体：可制成纳米/微米颗粒，包裹药物实现靶向或缓释",
+        "组织工程支架：为细胞生长提供临时支撑，之后自行降解",
+        "术后防粘连膜：用于隔离组织，防止手术创面粘连",
+        "可吸收医疗器械：如缝合线、骨固定材料等",
+        "增韧改性剂：添加进纯PLA材料中，可显著提升其柔韧性和抗冲击性"
+      ],
+      "features": [
+        "PLA的高强度与PTMC的柔韧性",
+        "降解产物无毒",
+        "多分散指数：≤1.8"
+      ]
+    },
+    {
+      "id": 3,
+      "category": "可降解高分子材料",
+      "name": "左旋聚乳酸-聚己内酯共聚物 PLCL",
+      "english_name": "Poly(ε-caprolactone)",
+      "cas": "",
+      "formula": "(C6H10O2)n(C3H4O2)m",
+      "molecular_weight": "根据需要可调",
+      "applications": [
+        "包装材料",
+        "纤维和非织造物",
+        "服装（内衣、外衣）",
+        "产业（建筑、农业、林业、造纸）",
+        "医疗卫生"
+      ],
+      "features": [
+        "柔韧性好",
+        "多分散指数：≤1.8"
+      ]
+    },
+    {
+      "id": 4,
+      "category": "可降解高分子材料",
+      "name": "聚己内酯 PCL",
+      "english_name": "Polycaprolactone",
+      "cas": "24980-41-4",
+      "formula": "(C6H10O2)n",
+      "molecular_weight": "50000-80000",
+      "applications": [
+        "外科医疗领域：手术缝合线、骨科夹板、放疗板、树脂绷带、压印模等",
+        "聚氨酯树脂领域：PUR热熔胶、油墨、无纺布粘结剂、鞋材、结构胶等",
+        "生物可降解材料领域：吹塑薄膜、压层材料、复合包装材料等",
+        "其他领域：3D打印材料、手工模型、有机着色剂、粉末涂料等"
+      ],
+      "features": [
+        "熔融指数：≤20",
+        "酸值：≤1.0",
+        "熔点：60-65℃"
+      ]
+    },
+    {
+      "id": 5,
+      "category": "可降解高分子材料",
+      "name": "聚三亚甲基碳酸酯 PTMC",
+      "english_name": "Poly(trimethylene carbonate)",
+      "cas": "",
+      "formula": "(C4H6O3)n",
+      "molecular_weight": "5-20万",
+      "applications": [
+        "医用高分子可吸收材料",
+        "高端医疗器械",
+        "医用耗材"
+      ],
+      "features": [
+        "医用级",
+        "多分散指数：≤1.8",
+        "特性粘度：1.5-2.0"
+      ]
+    }
+  ],
+  "standards": {
+    "molecular_weight_range": "5,000 - 300,000",
+    "heavy_metals": "≤300μg/g (以铅计)",
+    "tin_residue": "≤200μg/g",
+    "sulfate_ash": "≤0.1%",
+    "reference_standard": "YY/T 0661-2008"
+  },
+  "video_script_template": {
+    "scene1_intro": {
+      "title": "产品介绍",
+      "content": "欢迎了解四川琢新-云南聚和的可降解高分子材料。我们专注于医疗级生物可降解材料的研发与生产。",
+      "visual": "公司Logo + 产品分类概览"
+    },
+    "scene2_features": {
+      "title": "技术优势",
+      "content": "我们的产品具有分子量可调（5,000-300,000）、高纯度标准（重金属≤300μg/g）、优异生物相容性等特点，符合YY/T 0661-2008医疗标准。",
+      "visual": "技术参数展示 + 质量认证标识"
+    },
+    "scene3_applications": {
+      "title": "应用场景",
+      "content": "广泛应用于手术缝合线、骨钉骨板、药物缓释载体、组织工程支架、3D打印材料等领域，为医疗健康产业提供创新解决方案。",
+      "visual": "医疗器械 + 药物递送 + 3D打印场景"
+    }
+  }
+}

@@ -3,8 +3,15 @@ Trend analysis and intelligent decision tools for Biomat_Video_Engine.
 """
 import json
 from langchain.tools import tool
-from coze_coding_dev_sdk import SearchClient
 from coze_coding_utils.runtime_ctx.context import new_context
+
+# Try to import coze_coding_dev_sdk
+try:
+    from coze_coding_dev_sdk import SearchClient
+    HAS_SEARCH = True
+except ImportError:
+    HAS_SEARCH = False
+    print("Warning: coze_coding_dev_sdk not available. Trend search tools will be disabled.")
 
 
 def _search_trends(platform: str, query: str, count: int = 10) -> str:
@@ -19,6 +26,9 @@ def _search_trends(platform: str, query: str, count: int = 10) -> str:
     Returns:
         Formatted search results
     """
+    if not HAS_SEARCH:
+        return f"❌ Error: coze_coding_dev_sdk is not available. Trend search is disabled."
+
     try:
         ctx = new_context(method=f"trend_analysis.{platform}")
         client = SearchClient(ctx=ctx)
