@@ -45,7 +45,7 @@ async def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
-@app.get("/api/v1/generate-video-simple")
+@app.post("/api/v1/generate-video-simple")
 async def generate_video_simple(request: Request):
     """简化的视频生成API - 返回视频链接数组(适配Make Iterator)"""
     # Validate API key
