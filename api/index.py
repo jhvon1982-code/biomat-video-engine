@@ -221,38 +221,59 @@ async def generate_video_simple(request: Request):
         if "video_description" in result_data:
             video_description = result_data["video_description"]
             logging.info(f"[Video Generation] Found video description for {material}: {video_description[:100]}...")
-
-            try:
-                # 创建视频生成客户端
-                ctx = new_context(method="video.generate")
-                client = VideoGenerationClient(ctx=ctx)
-
-                # 调用视频生成API
-                logging.info(f"[Video Generation] Starting video generation for {material}...")
-                generated_url, response, last_frame_url = client.video_generation(
-                    content_items=[
-                        TextContent(text=video_description)
-                    ],
-                    model="doubao-seedance-1-5-pro-251215",
-                    resolution="720p",
-                    ratio="16:9",
-                    duration=5,  # 5秒视频
-                    watermark=False,
-                    max_wait_time=900,  # 最多等待15分钟
-                    generate_audio=True
-                )
-
-                if generated_url:
-                    video_url = generated_url
-                    logging.info(f"[Video Generation] Success! Video URL: {video_url}")
-                else:
-                    logging.warning(f"[Video Generation] Failed - no video URL returned")
-            except APIError as e:
-                logging.error(f"[Video Generation] API error: {str(e)}")
-            except Exception as e:
-                logging.error(f"[Video Generation] Unexpected error: {str(e)}")
         else:
-            logging.warning(f"[Video Generation] No video_description found in result_data")
+            # 备用方案：自动生成视频描述
+            logging.warning(f"[Video Generation] No video_description found, generating automatic description for {material}")
+
+            # 产品特性描述映射
+            product_descriptions = {
+                "PLGA": "一个专业的医学实验室场景，显微镜视角下的PLGA（聚乳酸-羟基乙酸共聚物）微球结构。纯白色的微球在蓝色背景中缓慢旋转，展示其完美的球形结构和均匀的尺寸分布。光影效果柔和，体现高科技生物材料的质感。镜头缓慢推进，展示微球表面的细微纹理。",
+                "PTLA": "一个现代化的医疗设备车间，展示PTLA（聚左旋乳酸）骨科固定材料的加工过程。高纯度的PTLA材料在精密机械的切割下成型，材料呈现出半透明的乳白色。镜头切换到X光视角，展示材料在人体骨骼中的应用效果。背景有医疗影像设备的蓝绿色光芒。",
+                "PLCL": "一个高科技材料研发实验室，PLCL（聚乳酸-己内酯共聚物）薄膜在测试设备中进行拉伸测试。材料展现出优异的弹性，拉伸后能够恢复原状。显微镜视角展示材料的分子结构，均匀的分子链排列清晰可见。实验室环境洁净，LED照明营造科技感。",
+                "PCL": "一个3D打印实验室，PCL（聚己内酯）材料正在被熔融沉积打印成复杂的支架结构。白色的PCL丝材在打印头上缓慢移动，层层堆叠形成网格状的医用支架。镜头特写打印细节，展示材料的柔韧性和可塑性。背景有CAD设计图纸的蓝光。",
+                "PTMC": "一个心血管介入手术室，PTMC（聚三亚甲基碳酸酯）心脏支架在血管模拟器中展开。支架具有良好的弹性，能够适应血管的弯曲。高倍显微镜展示支架的网状结构和表面光滑度。手术室灯光柔和，有监护设备的红色指示灯闪烁。",
+                "PGA": "一个专业的医学实验室场景，显微镜视角下的PGA（聚乙醇酸）缝合线纤维结构。纯白色的PGA纤维在蓝色背景中缓慢展开，展示其高强度和快速降解的特性。镜头缓慢推进，展示纤维的微观结构和均匀的直径。光影效果柔和，体现医用级生物材料的质感和纯净度。",
+                "PDO": "一个整形外科诊所，PDO（聚对二氧环己酮）可吸收缝合线在皮肤组织的显微视角下展示。透明的PDO纤维在肌理清晰的组织模型中穿行，材料柔软而强韧。镜头展示材料的柔韧性和生物相容性。背景有柔和的手术灯光和医疗设备的金属光泽。",
+                "PLA": "一个环保材料展示空间，PLA（聚乳酸）颗粒在自动化流水线上被加工成医用级可降解材料。淡黄色的PLA颗粒在透明容器中展示，背景有绿色植物和循环利用的图标，体现环保理念。镜头切换到材料的降解过程，展示其在自然环境中的生物降解特性。"
+            }
+
+            video_description = product_descriptions.get(
+                material,
+                f"一个高科技材料实验室，展示{material}生物医用材料的特性。材料在显微镜下展现出完美的结构和均匀的质地。实验室环境洁净专业，LED照明营造科技感。镜头缓慢推进，展示材料的微观细节和优异性能。"
+            )
+
+            logging.info(f"[Video Generation] Generated automatic description: {video_description[:100]}...")
+
+        # 生成视频
+        try:
+            # 创建视频生成客户端
+            ctx = new_context(method="video.generate")
+            client = VideoGenerationClient(ctx=ctx)
+
+            # 调用视频生成API
+            logging.info(f"[Video Generation] Starting video generation for {material}...")
+            generated_url, response, last_frame_url = client.video_generation(
+                content_items=[
+                    TextContent(text=video_description)
+                ],
+                model="doubao-seedance-1-5-pro-251215",
+                resolution="720p",
+                ratio="16:9",
+                duration=5,  # 5秒视频
+                watermark=False,
+                max_wait_time=900,  # 最多等待15分钟
+                generate_audio=True
+            )
+
+            if generated_url:
+                video_url = generated_url
+                logging.info(f"[Video Generation] Success! Video URL: {video_url}")
+            else:
+                logging.warning(f"[Video Generation] Failed - no video URL returned")
+        except APIError as e:
+            logging.error(f"[Video Generation] API error: {str(e)}")
+        except Exception as e:
+            logging.error(f"[Video Generation] Unexpected error: {str(e)}")
 
         # 如果视频生成失败，使用Fallback测试视频
         if not video_url:
