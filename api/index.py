@@ -48,6 +48,32 @@ def validate_api_key(request: Request) -> bool:
     provided_key = auth_header.replace('Bearer ', '')
     return provided_key == BIOMAT_API_KEY
 
+@app.post("/api/v1/test-generated-video")
+async def test_generated_video(request: Request):
+    """测试端点 - 直接返回一个已生成的真实视频URL"""
+    if not validate_api_key(request):
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid API key")
+
+    # 使用之前成功生成的PGA视频URL
+    test_real_video_url = "https://coze-coding-project.tos.coze.site/coze_storage_7624343115859689526/video/video_generate_cgt-20260421203910-zcdr9.mp4?sign=1808311198-921d051e5e-0-1d72f51732a390aa4db48fb2057f71c5af32d1734357775b351122223fa5e2a1"
+
+    return {
+        "success": True,
+        "data": [{
+            "status": "success",
+            "product": "PGA - 聚乙醇酸（已生成视频）",
+            "video_link": test_real_video_url,
+            "duration": "5s",
+            "seo_info": {
+                "title": "云南聚和PGA聚乙醇酸_医用级生物材料",
+                "description": "云南聚和PGA聚乙醇酸，高强度、快速降解，适用于缝合线。符合ISO 10993生物相容性标准，广泛应用于医疗器械和生物材料领域。",
+                "tags": ["云南聚和", "PGA", "聚乙醇酸", "医用材料", "生物相容性", "可降解"]
+            }
+        }],
+        "note": "这是一个测试端点，直接返回已生成的真实视频URL",
+        "execution_time": datetime.now().isoformat()
+    }
+
 @app.get("/api/v1/health")
 async def health_check():
     """健康检查端点"""
