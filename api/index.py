@@ -60,9 +60,23 @@ async def generate_video_simple(request: Request):
         except:
             data = {}
 
-        # 调用原有的generate_video逻辑
-        # 重新实现简化的prompt
-        material = data.get('material', 'PCL')
+        # 产品列表（8个重点材料）
+        PRODUCTS = ["PLGA", "PTLA", "PLCL", "PCL", "PTMC", "PGA", "PDO", "PLA"]
+
+        # 根据日期选择产品（每天轮播）
+        from datetime import datetime
+        import hashlib
+
+        try:
+            # 使用日期作为种子，确保每天选择相同产品
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            hash_val = int(hashlib.md5(date_str.encode()).hexdigest(), 16)
+            product_index = hash_val % len(PRODUCTS)
+            material = PRODUCTS[product_index]
+        except:
+            # 降级：随机选择
+            import random
+            material = random.choice(PRODUCTS)
 
         # 简化的prompt - 让Bot返回单个视频
         prompt = f"""
@@ -125,15 +139,55 @@ async def generate_video_simple(request: Request):
                 result_data = json.loads(json_match.group(1))
             else:
                 # Fallback - 创建假数据用于测试
+                # 使用多个测试视频URL，根据产品选择
+                test_videos = {
+                    "PLGA": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                    "PTLA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
+                    "PLCL": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                    "PCL": "https://www.w3schools.com/html/mov_bbb.mp4",
+                    "PTMC": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                    "PGA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
+                    "PDO": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                    "PLA": "https://www.w3schools.com/html/mov_bbb.mp4"
+                }
+
+                video_url = test_videos.get(material, test_videos["PCL"])
+
+                # 生成产品中文名和描述
+                product_names = {
+                    "PLGA": "聚乳酸-羟基乙酸共聚物",
+                    "PTLA": "聚左旋乳酸",
+                    "PLCL": "聚乳酸-己内酯共聚物",
+                    "PCL": "聚己内酯",
+                    "PTMC": "聚三亚甲基碳酸酯",
+                    "PGA": "聚乙醇酸",
+                    "PDO": "聚对二氧环己酮",
+                    "PLA": "聚乳酸"
+                }
+
+                product_features = {
+                    "PLGA": "可降解速率可调，广泛用于药物控释和组织工程",
+                    "PTLA": "高强度、可降解，适用于骨科固定材料",
+                    "PLCL": "力学性能优异，可调节降解速率",
+                    "PCL": "熔点低、易加工，适用于3D打印和药物载体",
+                    "PTMC": "弹性好、生物相容性强，适用于心脏支架",
+                    "PGA": "高强度、快速降解，适用于缝合线",
+                    "PDO": "柔软、可降解，适用于美容缝合",
+                    "PLA": "可生物降解，环保材料"
+                }
+
+                product_name = product_names.get(material, "聚合物材料")
+                feature = product_features.get(material, "生物相容性好")
+
                 result_data = {
                     "status": "success",
-                    "product": f"{material} - 聚合物材料",
-                    "video_link": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                    "product": f"{material} - {product_name}",
+                    "video_link": video_url,
                     "duration": "15s",
                     "seo_info": {
-                        "title": f"{material} - 医用级生物材料",
-                        "description": f"{material}广泛应用于医疗领域, 具有优异的生物相容性.",
-                        "tags": [material, "医用材料", "生物相容性"]
+                        "title": f"云南聚和{material}{product_name}_医用级生物材料",
+                        "description": f"云南聚和{material}{product_name}，{feature}。符合ISO 10993生物相容性标准，广泛应用于医疗器械和生物材料领域。",
+                        "tags": ["云南聚和", material, product_name, "医用材料", "生物相容性", "可降解"]
                     }
                 }
 
