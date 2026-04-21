@@ -9,8 +9,21 @@ import json
 import httpx
 from datetime import datetime
 from typing import Optional
+import logging
+
+# 视频生成API导入
+from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent
+from coze_coding_dev_sdk import APIError
+from coze_coding_utils.runtime_ctx.context import new_context
 
 app = FastAPI()
+
+# 日志配置
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # CORS
 app.add_middleware(
@@ -78,16 +91,16 @@ async def generate_video_simple(request: Request):
             import random
             material = random.choice(PRODUCTS)
 
-        # 简化的prompt - 让Bot返回单个视频
+        # 生成视频脚本和描述 - 让Bot返回视频描述而不是直接的视频链接
         prompt = f"""
-请为材料 {material} 生成一个15秒产品推广视频.
+请为材料 {material} 编写一个15秒产品推广视频的详细描述。
 
-严格按照以下JSON格式返回:
+请返回以下JSON格式:
 ```json
 {{
   "status": "success",
   "product": "{material} - 中文名称",
-  "video_link": "真实的视频下载链接",
+  "video_description": "详细的视频场景描述，用于AI视频生成",
   "duration": "15s",
   "seo_info": {{
     "title": "YouTube标题",
@@ -98,8 +111,8 @@ async def generate_video_simple(request: Request):
 ```
 
 注意:
-- video_link必须是一个真实的、可下载的视频URL
-- 如果无法生成真实视频, 请返回测试视频链接
+- video_description应该是一个详细的、生动的视频场景描述
+- 描述应该包含产品特性、应用场景和视觉效果
 """
 
         # Call Coze Bot API
@@ -190,6 +203,100 @@ async def generate_video_simple(request: Request):
                         "tags": ["云南聚和", material, product_name, "医用材料", "生物相容性", "可降解"]
                     }
                 }
+
+        # 尝试使用视频生成API生成真实视频
+        video_url = None
+
+        # 检查是否有video_description字段
+        if "video_description" in result_data:
+            video_description = result_data["video_description"]
+            logging.info(f"[Video Generation] Found video description for {material}: {video_description[:100]}...")
+
+            try:
+                # 创建视频生成客户端
+                ctx = new_context(method="video.generate")
+                client = VideoGenerationClient(ctx=ctx)
+
+                # 调用视频生成API
+                logging.info(f"[Video Generation] Starting video generation for {material}...")
+                generated_url, response, last_frame_url = client.video_generation(
+                    content_items=[
+                        TextContent(text=video_description)
+                    ],
+                    model="doubao-seedance-1-5-pro-251215",
+                    resolution="720p",
+                    ratio="16:9",
+                    duration=5,  # 5秒视频
+                    watermark=False,
+                    max_wait_time=900,  # 最多等待15分钟
+                    generate_audio=True
+                )
+
+                if generated_url:
+                    video_url = generated_url
+                    logging.info(f"[Video Generation] Success! Video URL: {video_url}")
+                else:
+                    logging.warning(f"[Video Generation] Failed - no video URL returned")
+            except APIError as e:
+                logging.error(f"[Video Generation] API error: {str(e)}")
+            except Exception as e:
+                logging.error(f"[Video Generation] Unexpected error: {str(e)}")
+        else:
+            logging.warning(f"[Video Generation] No video_description found in result_data")
+
+        # 如果视频生成失败，使用Fallback测试视频
+        if not video_url:
+            logging.warning(f"[Video Generation] Using fallback test video for {material}")
+            test_videos = {
+                "PLGA": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "PTLA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
+                "PLCL": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                "PCL": "https://www.w3schools.com/html/mov_bbb.mp4",
+                "PTMC": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "PGA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
+                "PDO": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                "PLA": "https://www.w3schools.com/html/mov_bbb.mp4"
+            }
+            video_url = test_videos.get(material, test_videos["PCL"])
+
+        # 确保result_data中有product_name和feature
+        if "product" not in result_data:
+            product_names = {
+                "PLGA": "聚乳酸-羟基乙酸共聚物",
+                "PTLA": "聚左旋乳酸",
+                "PLCL": "聚乳酸-己内酯共聚物",
+                "PCL": "聚己内酯",
+                "PTMC": "聚三亚甲基碳酸酯",
+                "PGA": "聚乙醇酸",
+                "PDO": "聚对二氧环己酮",
+                "PLA": "聚乳酸"
+            }
+
+            product_features = {
+                "PLGA": "可降解速率可调，广泛用于药物控释和组织工程",
+                "PTLA": "高强度、可降解，适用于骨科固定材料",
+                "PLCL": "力学性能优异，可调节降解速率",
+                "PCL": "熔点低、易加工，适用于3D打印和药物载体",
+                "PTMC": "弹性好、生物相容性强，适用于心脏支架",
+                "PGA": "高强度、快速降解，适用于缝合线",
+                "PDO": "柔软、可降解，适用于美容缝合",
+                "PLA": "可生物降解，环保材料"
+            }
+
+            product_name = product_names.get(material, "聚合物材料")
+            feature = product_features.get(material, "生物相容性好")
+
+            result_data["product"] = f"{material} - {product_name}"
+
+            if "seo_info" not in result_data:
+                result_data["seo_info"] = {
+                    "title": f"云南聚和{material}{product_name}_医用级生物材料",
+                    "description": f"云南聚和{material}{product_name}，{feature}。符合ISO 10993生物相容性标准，广泛应用于医疗器械和生物材料领域。",
+                    "tags": ["云南聚和", material, product_name, "医用材料", "生物相容性", "可降解"]
+                }
+
+        # 更新video_link
+        result_data["video_link"] = video_url
 
         # 返回数组格式(适配Make Iterator)
         return {
