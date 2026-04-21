@@ -141,17 +141,23 @@ async def generate_video_simple(request: Request):
 
         # Extract response content
         response_text = result.get("messages", [{}])[-1].get("content", "")
+        logging.info(f"[Coze Bot] Raw response length: {len(response_text)}")
+        logging.info(f"[Coze Bot] Raw response (first 500 chars): {response_text[:500]}...")
 
         # Try to parse JSON
         try:
             result_data = json.loads(response_text)
+            logging.info(f"[JSON Parse] Successfully parsed JSON")
         except json.JSONDecodeError:
             import re
+            logging.warning(f"[JSON Parse] Failed to parse JSON directly, trying regex...")
             json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
             if json_match:
                 result_data = json.loads(json_match.group(1))
+                logging.info(f"[JSON Parse] Successfully parsed JSON via regex")
             else:
                 # Fallback - 创建假数据用于测试
+                logging.warning(f"[JSON Parse] No JSON found in response, using fallback")
                 # 使用多个测试视频URL，根据产品选择
                 test_videos = {
                     "PLGA": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
@@ -206,6 +212,10 @@ async def generate_video_simple(request: Request):
 
         # 尝试使用视频生成API生成真实视频
         video_url = None
+
+        # 记录result_data的所有键
+        logging.info(f"[Result Data] Keys in result_data: {list(result_data.keys())}")
+        logging.info(f"[Result Data] Full result_data: {json.dumps(result_data, ensure_ascii=False, indent=2)}")
 
         # 检查是否有video_description字段
         if "video_description" in result_data:
