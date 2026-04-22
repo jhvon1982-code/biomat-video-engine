@@ -322,20 +322,28 @@ async def generate_video_simple(request: Request):
             else:
                 logging.info(f"[Video Pool] Skipping real-time generation, using pre-generated video")
 
-        # 如果视频生成失败，使用Fallback测试视频
+        # 如果视频生成失败，使用Fallback
         if not video_url:
-            logging.warning(f"[Video Generation] Using fallback test video for {material}")
-            test_videos = {
-                "PLGA": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
-                "PTLA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
-                "PLCL": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                "PCL": "https://www.w3schools.com/html/mov_bbb.mp4",
-                "PTMC": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
-                "PGA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
-                "PDO": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                "PLA": "https://www.w3schools.com/html/mov_bbb.mp4"
-            }
-            video_url = test_videos.get(material, test_videos["PCL"])
+            logging.warning(f"[Video Generation] Using fallback for {material}")
+
+            # 优先使用预生成的真实视频
+            if USE_PREGENERATED_VIDEOS and material in PRE_GENERATED_VIDEOS:
+                video_url = PRE_GENERATED_VIDEOS[material]
+                logging.info(f"[Video Pool] Fallback to pre-generated video: {video_url[:100]}...")
+            else:
+                # 最后的Fallback - 测试视频
+                logging.error(f"[Video Pool] No pre-generated video available, using test video")
+                test_videos = {
+                    "PLGA": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                    "PTLA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
+                    "PLCL": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                    "PCL": "https://www.w3schools.com/html/mov_bbb.mp4",
+                    "PTMC": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                    "PGA": "https://sample-videos.com/video123/mp4/480/big_buck_bunny_480p_1mb.mp4",
+                    "PDO": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                    "PLA": "https://www.w3schools.com/html/mov_bbb.mp4"
+                }
+                video_url = test_videos.get(material, test_videos["PCL"])
 
         # 确保result_data中有product_name和feature
         if "product" not in result_data:
