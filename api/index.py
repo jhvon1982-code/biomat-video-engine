@@ -266,15 +266,9 @@ async def generate_video_simple(request: Request):
             video_url = PRE_GENERATED_VIDEOS[material]
             logging.info(f"[Video Pool] Using pre-generated video for {material}: {video_url[:100]}...")
         else:
-            # 检查是否有video_description字段
-            if "video_description" in result_data:
-                video_description = result_data["video_description"]
-                logging.info(f"[Video Generation] Found video description for {material}: {video_description[:100]}...")
-        else:
-            # 备用方案：自动生成视频描述
-            logging.warning(f"[Video Generation] No video_description found, generating automatic description for {material}")
+            # 没有预生成视频，需要实时生成
 
-            # 产品特性描述映射
+            # 产品特性描述映射（用于自动生成）
             product_descriptions = {
                 "PLGA": "一个专业的医学实验室场景，显微镜视角下的PLGA（聚乳酸-羟基乙酸共聚物）微球结构。纯白色的微球在蓝色背景中缓慢旋转，展示其完美的球形结构和均匀的尺寸分布。光影效果柔和，体现高科技生物材料的质感。镜头缓慢推进，展示微球表面的细微纹理。",
                 "PTLA": "一个现代化的医疗设备车间，展示PTLA（聚左旋乳酸）骨科固定材料的加工过程。高纯度的PTLA材料在精密机械的切割下成型，材料呈现出半透明的乳白色。镜头切换到X光视角，展示材料在人体骨骼中的应用效果。背景有医疗影像设备的蓝绿色光芒。",
@@ -286,41 +280,52 @@ async def generate_video_simple(request: Request):
                 "PLA": "一个环保材料展示空间，PLA（聚乳酸）颗粒在自动化流水线上被加工成医用级可降解材料。淡黄色的PLA颗粒在透明容器中展示，背景有绿色植物和循环利用的图标，体现环保理念。镜头切换到材料的降解过程，展示其在自然环境中的生物降解特性。"
             }
 
-            video_description = product_descriptions.get(
-                material,
-                f"一个高科技材料实验室，展示{material}生物医用材料的特性。材料在显微镜下展现出完美的结构和均匀的质地。实验室环境洁净专业，LED照明营造科技感。镜头缓慢推进，展示材料的微观细节和优异性能。"
-            )
+            # 检查是否有video_description字段
+            if "video_description" in result_data:
+                video_description = result_data["video_description"]
+                logging.info(f"[Video Generation] Using Bot description for {material}: {video_description[:100]}...")
+            else:
+                # 使用自动生成的描述
+                logging.warning(f"[Video Generation] No video_description from Bot, using automatic description for {material}")
+                video_description = product_descriptions.get(
+                    material,
+                    f"一个高科技材料实验室，展示{material}生物医用材料的特性。材料在显微镜下展现出完美的结构和均匀的质地。实验室环境洁净专业，LED照明营造科技感。镜头缓慢推进，展示材料的微观细节和优异性能。"
+                )
+                logging.info(f"[Video Generation] Generated automatic description: {video_description[:100]}...")
 
-            logging.info(f"[Video Generation] Generated automatic description: {video_description[:100]}...")
+            # 调用视频生成API
+            logging.info(f"[Video Generation] Starting video generation for {material}...")
+            try:
+                client = VideoGenerationClient()
 
-            # 只有在没有预生成视频时才尝试实时生成
-            if not USE_PREGENERATED_VIDEOS or material not in PRE_GENERATED_VIDEOS:
-                # 生成视频
-                try:
-                    # 创建视频生成客户端
-                    ctx = new_context(method="video.generate")
-                    client = VideoGenerationClient(ctx=ctx)
+                generated_url, response, last_frame_url = client.video_generation(
+                    content_items=[
+                        TextContent(text=video_description)
+                    ],
+                    model="doubao-seedance-1-5-pro-251215",
+                    resolution="720p",
+                    ratio="16:9",
+                    duration=5,  # 5秒视频
+                    watermark=False,
+                    max_wait_time=900,  # 最多等待15分钟
+                    generate_audio=True
+                )
 
-                    # 调用视频生成API
-                    logging.info(f"[Video Generation] Starting video generation for {material}...")
-                    generated_url, response, last_frame_url = client.video_generation(
-                        content_items=[
-                            TextContent(text=video_description)
-                        ],
-                        model="doubao-seedance-1-5-pro-251215",
-                        resolution="720p",
-                        ratio="16:9",
-                        duration=5,  # 5秒视频
-                        watermark=False,
-                        max_wait_time=900,  # 最多等待15分钟
-                        generate_audio=True
-                    )
+                if generated_url:
+                    video_url = generated_url
+                    logging.info(f"[Video Generation] Success! Video URL: {video_url}")
+                else:
+                    logging.warning(f"[Video Generation] Failed - no video URL returned")
+                    logging.warning(f"[Video Generation] Response: {response}")
 
-                    if generated_url:
-                        video_url = generated_url
-                        logging.info(f"[Video Generation] Success! Video URL: {video_url}")
-                    else:
-                        logging.warning(f"[Video Generation] Failed - no video URL returned")
+            except APIError as e:
+                logging.error(f"[Video Generation] API error: {str(e)}")
+                import traceback
+                logging.error(f"[Video Generation] Traceback: {traceback.format_exc()}")
+            except Exception as e:
+                logging.error(f"[Video Generation] Unexpected error: {str(e)}")
+                import traceback
+                logging.error(f"[Video Generation] Traceback: {traceback.format_exc()}")
                 except APIError as e:
                     logging.error(f"[Video Generation] API error: {str(e)}")
                 except Exception as e:
