@@ -1,16 +1,22 @@
 """
 Vercel Serverless API - FastAPI
 """
-# 配置即梦视频生成SDK环境变量（确保在本地和Render都能工作）
+# 配置即梦视频生成SDK环境变量（必须在任何导入之前设置）
 import os
-os.environ['COZE_WORKLOAD_IDENTITY_API_KEY'] = 'M2pyUXJPeWFDdUhqRmUyYnllaVNPNWl4YnY5RlljaHc6dXA5Tk5kUElmcHk2MXZlU203djh5dGx5dTA3WnJsWnZ4OUMwTjJSdG1EaHZEMXppMFhHNENQbmlZYzJkMnB1Rg=='
-os.environ['COZE_INTEGRATION_BASE_URL'] = 'https://integration.coze.cn'
-os.environ['COZE_INTEGRATION_MODEL_BASE_URL'] = 'https://integration.coze.cn/api/v3'
+import sys
+
+# 强制设置环境变量
+os.environ.setdefault('COZE_WORKLOAD_IDENTITY_API_KEY', 'M2pyUXJPeWFDdUhqRmUyYnllaVNPNWl4YnY5RlljaHc6dXA5Tk5kUElmcHk2MXZlU203djh5dGx5dTA3WnJsWnZ4OUMwTjJSdG1EaHZEMXppMFhHNENQbmlZYzJkMnB1Rg==')
+os.environ.setdefault('COZE_INTEGRATION_BASE_URL', 'https://integration.coze.cn')
+os.environ.setdefault('COZE_INTEGRATION_MODEL_BASE_URL', 'https://integration.coze.cn/api/v3')
+
+# 验证环境变量已设置
+if not os.getenv('COZE_WORKLOAD_IDENTITY_API_KEY'):
+    print("WARNING: COZE_WORKLOAD_IDENTITY_API_KEY not set!", file=sys.stderr)
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
 import json
 import httpx
 from datetime import datetime
@@ -295,6 +301,15 @@ async def generate_video_simple(request: Request):
 
             # 调用视频生成API
             logging.info(f"[Video Generation] Starting video generation for {material}...")
+
+            # 确保环境变量已设置（再次确认）
+            if not os.getenv('COZE_WORKLOAD_IDENTITY_API_KEY'):
+                logging.error(f"[Video Generation] CRITICAL: COZE_WORKLOAD_IDENTITY_API_KEY not set!")
+                logging.error(f"[Video Generation] Attempting to set it now...")
+                os.environ['COZE_WORKLOAD_IDENTITY_API_KEY'] = 'M2pyUXJPeWFDdUhqRmUyYnllaVNPNWl4YnY5RlljaHc6dXA5Tk5kUElmcHk2MXZlU203djh5dGx5dTA3WnJsWnZ4OUMwTjJSdG1EaHZEMXppMFhHNENQbmlZYzJkMnB1Rg=='
+                os.environ['COZE_INTEGRATION_BASE_URL'] = 'https://integration.coze.cn'
+                os.environ['COZE_INTEGRATION_MODEL_BASE_URL'] = 'https://integration.coze.cn/api/v3'
+
             try:
                 client = VideoGenerationClient()
 
@@ -326,16 +341,11 @@ async def generate_video_simple(request: Request):
                 logging.error(f"[Video Generation] Unexpected error: {str(e)}")
                 import traceback
                 logging.error(f"[Video Generation] Traceback: {traceback.format_exc()}")
-                except APIError as e:
-                    logging.error(f"[Video Generation] API error: {str(e)}")
-                except Exception as e:
-                    logging.error(f"[Video Generation] Unexpected error: {str(e)}")
-            else:
-                logging.info(f"[Video Pool] Skipping real-time generation, using pre-generated video")
 
         # 如果视频生成失败，使用Fallback
         if not video_url:
             logging.warning(f"[Video Generation] Using fallback for {material}")
+
 
             # 优先使用预生成的真实视频
             if USE_PREGENERATED_VIDEOS and material in PRE_GENERATED_VIDEOS:
