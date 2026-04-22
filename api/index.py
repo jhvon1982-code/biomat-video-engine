@@ -89,7 +89,10 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "Biomat_Video_Engine",
-        "version": "2.0",
+        "version": "3.0",
+        "video_pool_loaded": USE_PREGENERATED_VIDEOS,
+        "video_pool_size": len(PRE_GENERATED_VIDEOS) if USE_PREGENERATED_VIDEOS else 0,
+        "available_materials": list(PRE_GENERATED_VIDEOS.keys()) if USE_PREGENERATED_VIDEOS else [],
         "timestamp": datetime.now().isoformat()
     }
 
