@@ -1,6 +1,12 @@
 """
 Vercel Serverless API - FastAPI
 """
+# 配置即梦视频生成SDK环境变量（确保在本地和Render都能工作）
+import os
+os.environ['COZE_WORKLOAD_IDENTITY_API_KEY'] = 'M2pyUXJPeWFDdUhqRmUyYnllaVNPNWl4YnY5RlljaHc6dXA5Tk5kUElmcHk2MXZlU203djh5dGx5dTA3WnJsWnZ4OUMwTjJSdG1EaHZEMXppMFhHNENQbmlZYzJkMnB1Rg=='
+os.environ['COZE_INTEGRATION_BASE_URL'] = 'https://integration.coze.cn'
+os.environ['COZE_INTEGRATION_MODEL_BASE_URL'] = 'https://integration.coze.cn/api/v3'
+
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
