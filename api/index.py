@@ -123,8 +123,8 @@ async def generate_video_direct(request: Request):
         logger.info(f"[Video Generation] Duration: 5 seconds")
 
         try:
-            ctx = new_context(method="video.generate")
-            client = VideoGenerationClient(ctx=ctx)
+            # 不使用context，简化客户端初始化
+            client = VideoGenerationClient()
 
             generated_url, response, _ = client.video_generation(
                 content_items=[
