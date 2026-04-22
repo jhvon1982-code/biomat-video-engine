@@ -16,6 +16,15 @@ from coze_coding_dev_sdk.video import VideoGenerationClient, TextContent
 from coze_coding_dev_sdk import APIError
 from coze_coding_utils.runtime_ctx.context import new_context
 
+# 导入预生成的视频池
+try:
+    from video_pool import PRE_GENERATED_VIDEOS
+    USE_PREGENERATED_VIDEOS = True
+    logger.info("[Video Pool] Loaded pre-generated videos")
+except ImportError:
+    USE_PREGENERATED_VIDEOS = False
+    logger.warning("[Video Pool] Failed to load pre-generated videos, will use fallback")
+
 app = FastAPI()
 
 # 日志配置
@@ -243,10 +252,15 @@ async def generate_video_simple(request: Request):
         logging.info(f"[Result Data] Keys in result_data: {list(result_data.keys())}")
         logging.info(f"[Result Data] Full result_data: {json.dumps(result_data, ensure_ascii=False, indent=2)}")
 
-        # 检查是否有video_description字段
-        if "video_description" in result_data:
-            video_description = result_data["video_description"]
-            logging.info(f"[Video Generation] Found video description for {material}: {video_description[:100]}...")
+        # 优先使用预生成的视频池
+        if USE_PREGENERATED_VIDEOS and material in PRE_GENERATED_VIDEOS:
+            video_url = PRE_GENERATED_VIDEOS[material]
+            logging.info(f"[Video Pool] Using pre-generated video for {material}: {video_url[:100]}...")
+        else:
+            # 检查是否有video_description字段
+            if "video_description" in result_data:
+                video_description = result_data["video_description"]
+                logging.info(f"[Video Generation] Found video description for {material}: {video_description[:100]}...")
         else:
             # 备用方案：自动生成视频描述
             logging.warning(f"[Video Generation] No video_description found, generating automatic description for {material}")
@@ -270,36 +284,40 @@ async def generate_video_simple(request: Request):
 
             logging.info(f"[Video Generation] Generated automatic description: {video_description[:100]}...")
 
-        # 生成视频
-        try:
-            # 创建视频生成客户端
-            ctx = new_context(method="video.generate")
-            client = VideoGenerationClient(ctx=ctx)
+            # 只有在没有预生成视频时才尝试实时生成
+            if not USE_PREGENERATED_VIDEOS or material not in PRE_GENERATED_VIDEOS:
+                # 生成视频
+                try:
+                    # 创建视频生成客户端
+                    ctx = new_context(method="video.generate")
+                    client = VideoGenerationClient(ctx=ctx)
 
-            # 调用视频生成API
-            logging.info(f"[Video Generation] Starting video generation for {material}...")
-            generated_url, response, last_frame_url = client.video_generation(
-                content_items=[
-                    TextContent(text=video_description)
-                ],
-                model="doubao-seedance-1-5-pro-251215",
-                resolution="720p",
-                ratio="16:9",
-                duration=5,  # 5秒视频
-                watermark=False,
-                max_wait_time=900,  # 最多等待15分钟
-                generate_audio=True
-            )
+                    # 调用视频生成API
+                    logging.info(f"[Video Generation] Starting video generation for {material}...")
+                    generated_url, response, last_frame_url = client.video_generation(
+                        content_items=[
+                            TextContent(text=video_description)
+                        ],
+                        model="doubao-seedance-1-5-pro-251215",
+                        resolution="720p",
+                        ratio="16:9",
+                        duration=5,  # 5秒视频
+                        watermark=False,
+                        max_wait_time=900,  # 最多等待15分钟
+                        generate_audio=True
+                    )
 
-            if generated_url:
-                video_url = generated_url
-                logging.info(f"[Video Generation] Success! Video URL: {video_url}")
+                    if generated_url:
+                        video_url = generated_url
+                        logging.info(f"[Video Generation] Success! Video URL: {video_url}")
+                    else:
+                        logging.warning(f"[Video Generation] Failed - no video URL returned")
+                except APIError as e:
+                    logging.error(f"[Video Generation] API error: {str(e)}")
+                except Exception as e:
+                    logging.error(f"[Video Generation] Unexpected error: {str(e)}")
             else:
-                logging.warning(f"[Video Generation] Failed - no video URL returned")
-        except APIError as e:
-            logging.error(f"[Video Generation] API error: {str(e)}")
-        except Exception as e:
-            logging.error(f"[Video Generation] Unexpected error: {str(e)}")
+                logging.info(f"[Video Pool] Skipping real-time generation, using pre-generated video")
 
         # 如果视频生成失败，使用Fallback测试视频
         if not video_url:
