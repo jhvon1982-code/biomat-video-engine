@@ -32,6 +32,11 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# OAuth Secrets
+config/youtube_client_secrets.json
+config/*.json
+workspace/youtube_credentials.json
+
 # Temporary
 tmp/
 temp/
